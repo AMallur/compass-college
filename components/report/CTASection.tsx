@@ -1,21 +1,58 @@
 'use client'
 
 import { useState } from 'react'
+import { SchoolSearchResult } from '@/lib/scorecard'
+import { BeliefAnswer } from '@/components/steps/BeliefStep'
 
 interface CTASectionProps {
   avgSavings: number
   onRestart: () => void
+  // Context passed to Supabase
+  income: number
+  familySize: number
+  stateAbbr: string
+  schools: SchoolSearchResult[]
+  belief: BeliefAnswer | null
 }
 
-export default function CTASection({ avgSavings, onRestart }: CTASectionProps) {
-  const [email, setEmail] = useState('')
-  const [saved, setSaved] = useState(false)
-  const [skipped, setSkipped] = useState(false)
+type SubmitState = 'idle' | 'loading' | 'saved' | 'error' | 'skipped'
 
-  function handleSave(e: React.FormEvent) {
+export default function CTASection({
+  avgSavings,
+  onRestart,
+  income,
+  familySize,
+  stateAbbr,
+  schools,
+  belief,
+}: CTASectionProps) {
+  const [email, setEmail] = useState('')
+  const [submitState, setSubmitState] = useState<SubmitState>('idle')
+
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     if (!email) return
-    setSaved(true)
+    setSubmitState('loading')
+
+    try {
+      const res = await fetch('/api/capture-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          income,
+          familySize,
+          state: stateAbbr,
+          schools: schools.map((s) => ({ id: s.id, name: s.name, state: s.state })),
+          belief,
+        }),
+      })
+
+      if (!res.ok) throw new Error('Request failed')
+      setSubmitState('saved')
+    } catch {
+      setSubmitState('error')
+    }
   }
 
   function handleCopy() {
@@ -23,14 +60,10 @@ export default function CTASection({ avgSavings, onRestart }: CTASectionProps) {
     navigator.clipboard.writeText(text).catch(() => {})
   }
 
-  function handlePrint() {
-    window.print()
-  }
-
   return (
     <div className="space-y-6">
       {/* Email capture */}
-      {!saved && !skipped && (
+      {submitState !== 'saved' && submitState !== 'skipped' && (
         <div className="bg-white rounded-2xl border border-[#DDE3EA] shadow-sm px-6 py-5">
           <h3 className="font-bold text-[#0B1D35] text-lg mb-1">Save this report + get deadline reminders</h3>
           <p className="text-[#8899AA] text-sm mb-4">
@@ -42,18 +75,26 @@ export default function CTASection({ avgSavings, onRestart }: CTASectionProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
-              className="flex-1 px-4 py-3 rounded-xl border border-[#DDE3EA] text-[#0B1D35] focus:outline-none focus:ring-2 focus:ring-[#E8A020] text-sm"
+              disabled={submitState === 'loading'}
+              className="flex-1 px-4 py-3 rounded-xl border border-[#DDE3EA] text-[#0B1D35] focus:outline-none focus:ring-2 focus:ring-[#E8A020] text-sm disabled:opacity-50"
               required
             />
             <button
               type="submit"
-              className="px-6 py-3 bg-[#0B1D35] text-white font-semibold rounded-xl hover:bg-[#0B1D35]/80 transition-colors text-sm whitespace-nowrap"
+              disabled={submitState === 'loading'}
+              className="px-6 py-3 bg-[#0B1D35] text-white font-semibold rounded-xl hover:bg-[#0B1D35]/80 transition-colors text-sm whitespace-nowrap disabled:opacity-50 flex items-center gap-2 justify-center"
             >
+              {submitState === 'loading' && (
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              )}
               Save my report
             </button>
           </form>
+          {submitState === 'error' && (
+            <p className="mt-2 text-sm text-red-600">Something went wrong — please try again.</p>
+          )}
           <button
-            onClick={() => setSkipped(true)}
+            onClick={() => setSubmitState('skipped')}
             className="mt-3 text-xs text-[#8899AA] underline underline-offset-2 hover:text-[#0B1D35]"
           >
             Continue without saving →
@@ -61,7 +102,7 @@ export default function CTASection({ avgSavings, onRestart }: CTASectionProps) {
         </div>
       )}
 
-      {saved && (
+      {submitState === 'saved' && (
         <div className="bg-[#0D9E6E]/10 border border-[#0D9E6E]/30 rounded-2xl px-6 py-5 text-center">
           <p className="text-[#0D9E6E] font-bold text-lg">✓ Report saved!</p>
           <p className="text-[#8899AA] text-sm mt-1">We&apos;ll remind you before your state grant deadline.</p>
@@ -93,7 +134,7 @@ export default function CTASection({ avgSavings, onRestart }: CTASectionProps) {
             Copy results to share
           </button>
           <button
-            onClick={handlePrint}
+            onClick={() => window.print()}
             className="text-white/60 text-sm underline underline-offset-2 hover:text-white"
           >
             Print report

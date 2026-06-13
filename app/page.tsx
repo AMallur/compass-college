@@ -213,7 +213,15 @@ export default function Page() {
           {stateData && <StateGrant stateData={stateData} />}
 
           {/* CTA (email + FAFSA button + restart) */}
-          <CTASection avgSavings={avgSavings} onRestart={restart} />
+          <CTASection
+            avgSavings={avgSavings}
+            onRestart={restart}
+            income={income}
+            familySize={familySize}
+            stateAbbr={stateAbbr}
+            schools={schools}
+            belief={belief}
+          />
         </div>
       </main>
     )
