@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     })
 
     const { error: emailError } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL ?? 'Compass Financial <noreply@compassfinancial.com>',
+      from: process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev',
       to: email,
       subject,
       html,
