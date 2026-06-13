@@ -267,7 +267,7 @@ export function buildReportEmail(params: {
           <tr><td style="background:#0B1D35;border-radius:12px;padding:32px;text-align:center;">
             <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 20px;">
               <tr><td style="background:#E8A020;border-radius:10px;">
-                <a href="https://fafsa.ed.gov" style="display:block;padding:16px 32px;color:#0B1D35;font-weight:700;font-size:17px;text-decoration:none;font-family:Arial,sans-serif;">
+                <a href="https://studentaid.gov/h/apply-for-aid/fafsa" style="display:block;padding:16px 32px;color:#0B1D35;font-weight:700;font-size:17px;text-decoration:none;font-family:Arial,sans-serif;">
                   Start my FAFSA &mdash; lock in these numbers &rarr;
                 </a>
               </td></tr>

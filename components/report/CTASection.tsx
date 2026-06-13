@@ -113,7 +113,7 @@ export default function CTASection({
       {/* Primary CTA */}
       <div className="bg-[#0B1D35] rounded-2xl px-6 py-8 text-center">
         <a
-          href="https://fafsa.ed.gov"
+          href="https://studentaid.gov/h/apply-for-aid/fafsa"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-block w-full py-4 rounded-xl bg-[#E8A020] text-[#0B1D35] font-bold text-lg hover:bg-amber-400 active:scale-95 transition-all mb-6"
