@@ -220,6 +220,7 @@ export default function Page() {
             familySize={familySize}
             stateAbbr={stateAbbr}
             schools={schools}
+            resolvedSchools={resolvedSchools}
             belief={belief}
           />
         </div>

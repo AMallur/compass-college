@@ -1,17 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { SchoolSearchResult } from '@/lib/scorecard'
+import { SchoolData, SchoolSearchResult } from '@/lib/scorecard'
 import { BeliefAnswer } from '@/components/steps/BeliefStep'
 
 interface CTASectionProps {
   avgSavings: number
   onRestart: () => void
-  // Context passed to Supabase
   income: number
   familySize: number
   stateAbbr: string
   schools: SchoolSearchResult[]
+  resolvedSchools: SchoolData[]
   belief: BeliefAnswer | null
 }
 
@@ -24,6 +24,7 @@ export default function CTASection({
   familySize,
   stateAbbr,
   schools,
+  resolvedSchools,
   belief,
 }: CTASectionProps) {
   const [email, setEmail] = useState('')
@@ -43,7 +44,7 @@ export default function CTASection({
           income,
           familySize,
           state: stateAbbr,
-          schools: schools.map((s) => ({ id: s.id, name: s.name, state: s.state })),
+          schools: resolvedSchools,
           belief,
         }),
       })
