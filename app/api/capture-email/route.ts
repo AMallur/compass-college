@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { Resend } from 'resend'
+import { BrevoClient } from '@getbrevo/brevo'
 import { calculateSAI } from '@/lib/sai-formula'
 import { getStateByAbbr } from '@/lib/state-data'
 import { buildReportEmail } from '@/lib/email-template'
@@ -43,46 +43,52 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to save' }, { status: 500 })
   }
 
-  // 2. Build and send email via Resend
-  const resend = new Resend(process.env.RESEND_API_KEY!)
-  const sai = calculateSAI(income, familySize)
-  const stateData = getStateByAbbr(stateAbbr)
+  // 2. Send report email via Brevo (best-effort — never blocks the response)
+  if (schools.length > 0 && stateAbbr) {
+    try {
+      const sai = calculateSAI(income, familySize)
+      const stateData = getStateByAbbr(stateAbbr)
 
-  if (stateData && schools.length > 0) {
-    const savingsArr = schools
-      .map((s: SchoolData) => {
-        const net = getNetPriceForIncome(s, income)
-        const sticker = s.costOfAttendance
-        if (net == null || sticker == null) return null
-        return sticker - net
-      })
-      .filter((v): v is number => v != null && v > 0)
+      if (stateData) {
+        const savingsArr = schools
+          .map((s: SchoolData) => {
+            const net = getNetPriceForIncome(s, income)
+            const sticker = s.costOfAttendance
+            if (net == null || sticker == null) return null
+            return sticker - net
+          })
+          .filter((v): v is number => v != null && v > 0)
 
-    const avgSavings =
-      savingsArr.length > 0
-        ? Math.round(savingsArr.reduce((a, b) => a + b, 0) / savingsArr.length)
-        : 0
+        const avgSavings =
+          savingsArr.length > 0
+            ? Math.round(savingsArr.reduce((a, b) => a + b, 0) / savingsArr.length)
+            : 0
 
-    const { subject, html } = buildReportEmail({
-      income,
-      familySize,
-      stateAbbr,
-      schools,
-      sai,
-      stateData,
-      avgSavings,
-    })
+        const { subject, html } = buildReportEmail({
+          income,
+          familySize,
+          stateAbbr,
+          schools,
+          sai,
+          stateData,
+          avgSavings,
+        })
 
-    const { error: emailError } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev',
-      to: email,
-      subject,
-      html,
-    })
+        const brevo = new BrevoClient({ apiKey: process.env.BREVO_API_KEY! })
 
-    if (emailError) {
-      // Log but don't fail the request — email is best-effort, save succeeded
-      console.error('Resend error:', emailError)
+        await brevo.transactionalEmails.sendTransacEmail({
+          sender: {
+            email: process.env.BREVO_SENDER_EMAIL!,
+            name: 'Compass Financial',
+          },
+          to: [{ email }],
+          subject,
+          htmlContent: html,
+        })
+      }
+    } catch (emailErr) {
+      // Log but never fail — Supabase save already succeeded
+      console.error('Brevo send error:', emailErr)
     }
   }
 
